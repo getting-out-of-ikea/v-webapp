@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
-	default: async ({ request, locals: { supabase } }) => {
+	default: async ({ request, url, locals: { supabase } }) => {
 		const formData = await request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
@@ -19,13 +19,18 @@ export const actions: Actions = {
 			});
 		}
 
-		const { data, error } = await supabase.auth.signUp({ email, password });
+		const { data, error } = await supabase.auth.signUp({
+			email,
+			password,
+			options: {
+				emailRedirectTo: `${url.origin}/login`
+			}
+		});
 
 		if (error) {
 			return fail(400, { error: error.message, email, message: '' });
 		}
 
-		// Se su Supabase è attiva la conferma email, la sessione non esiste ancora
 		if (!data.session) {
 			return {
 				error: '',
