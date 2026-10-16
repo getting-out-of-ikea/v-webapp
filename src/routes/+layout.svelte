@@ -30,6 +30,7 @@
 			<a href={resolve('/')} class="text-lg font-semibold">VideoApp</a>
 			<div class="flex items-center gap-4 text-sm">
 				{#if user}
+					<a href={resolve('/tasks')} class="hover:underline">Le mie task</a>
 					<span class="text-gray-600">{user.email}</span>
 					<form method="POST" action={resolve('/logout')}>
 						<button
