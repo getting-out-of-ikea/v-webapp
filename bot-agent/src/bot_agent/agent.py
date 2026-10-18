@@ -19,6 +19,17 @@ The pipeline is STT -> LLM -> TTS:
 
 Everything that can be configured lives in the environment; see
 ``bot-agent/.env.example``.
+
+The module exposes a module-level ``server`` (an :class:`AgentServer`). That is
+not decorative: ``lk agent dev src/bot_agent/agent.py`` imports this file and
+then introspects it for an ``AgentServer`` instance, so the worker must be
+registered on an object that exists at import time. Building
+``WorkerOptions`` inside ``main()`` (as earlier versions of this file did) is
+still a valid *runtime* path, but it is invisible to ``lk agent dev`` and
+fails with ``CLIError: Could not find AgentServer in module``. Keeping
+``load_dotenv()`` at module scope follows from the same fact: discovery never
+calls ``main()``, so anything that has to be configured before the server is
+constructed must run on import.
 """
 
 from __future__ import annotations
@@ -29,15 +40,22 @@ import os
 from dotenv import load_dotenv
 from livekit.agents import (
     Agent,
+    AgentServer,
     AgentSession,
     JobContext,
     RoomOutputOptions,
-    WorkerOptions,
     cli,
 )
 from livekit.plugins import openai, silero
 
 from .plugins import PiperTTS, WhisperSTT
+
+# Module scope, not inside main(): `lk agent dev` imports this module and
+# reads the environment while constructing `server` below, without ever
+# calling main(). Doing it here also covers `uv run bot-agent dev|start`
+# unchanged: livekit's CLI would load .env itself, but this keeps the
+# behaviour independent of the version and makes the failure mode obvious.
+load_dotenv()
 
 # Must match the agent name dispatched by the webapp's token endpoint.
 AGENT_NAME = "llm-bot"
@@ -58,6 +76,12 @@ GREETING = "Saluta l'utente in una frase e chiedigli come puoi aiutarlo."
 
 logger = logging.getLogger("bot-agent")
 
+# The object `lk agent dev` looks for (the CLIError message is literal:
+# "try to define the `server` variable"). Created at import time, after
+# load_dotenv(), because the server may read LIVEKIT_URL / API key / secret
+# from the environment.
+server = AgentServer()
+
 
 def _optional_env(name: str) -> str | None:
     """Read an env var, treating an empty string as "not set"."""
@@ -74,6 +98,9 @@ class Bot(Agent):
         )
 
 
+# `agent_name` registers the worker under the name the webapp dispatches.
+# This replaces `WorkerOptions(entrypoint_fnc=..., agent_name=...)`.
+@server.rtc_session(agent_name=AGENT_NAME)
 async def entrypoint(ctx: JobContext) -> None:
     await ctx.connect()
 
@@ -132,7 +159,9 @@ async def entrypoint(ctx: JobContext) -> None:
 
 
 def main() -> None:
-    # livekit's CLI does load .env itself, but doing it here too makes the
-    # behaviour independent of the version and keeps the failure mode obvious.
-    load_dotenv()
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, agent_name=AGENT_NAME))
+    # `load_dotenv()` already ran at import time; no need to repeat it here.
+    cli.run_app(server)
+
+
+if __name__ == "__main__":
+    main()
