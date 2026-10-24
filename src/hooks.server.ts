@@ -54,7 +54,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	}
 
 	if (session && publicPaths.includes(event.url.pathname)) {
-		redirect(303, '/room');
+		redirect(303, '/');
 	}
 
 	return resolve(event);
