@@ -5,3 +5,7 @@ Quindi sono necessari 4 icone con immagini adeguate alla funzione, e un testo in
 "Videocall", "Chatbot", "Tag", "Tasks"
 Ora la webapp, dopo il login, entra direttamente in videocall. Vogliamo invece che la home pagine sia bianca e che l'utente attivi la videocall
 tramite la prima icona
+
+# popup stanza
+Quando l'utente clicca la icona videocall, vogliamo che compaia una piccola popup, accanto all'icona, che chiede il nome della stanza e che apra quel nome
+Ora invece viene aperta la stanza "room" senza scelta
