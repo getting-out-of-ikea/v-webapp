@@ -1,7 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { invalidate } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 
@@ -32,6 +32,33 @@
 		}
 	];
 
+	let showRoomPopup = $state(false);
+	let roomName = $state('');
+	let roomPopupMessage = $state('');
+
+	function openRoomPopup() {
+		showRoomPopup = true;
+		roomName = '';
+		roomPopupMessage = '';
+	}
+
+	function closeRoomPopup() {
+		showRoomPopup = false;
+		roomName = '';
+		roomPopupMessage = '';
+	}
+
+	function submitRoomPopup() {
+		const trimmed = roomName.trim();
+		if (!trimmed) {
+			roomPopupMessage = 'Inserisci un nome per la stanza.';
+			return;
+		}
+
+		void goto(`/room?room=${encodeURIComponent(trimmed)}`);
+		closeRoomPopup();
+	}
+
 	onMount(() => {
 		const {
 			data: { subscription }
@@ -53,9 +80,18 @@
 			<div class="flex items-center gap-8">
 				<a href={resolve('/')} class="text-lg font-semibold">VideoApp</a>
 				{#if user}
-					<div class="flex items-center gap-6" aria-label="Menu principale">
+					<div class="relative flex items-center gap-6" aria-label="Menu principale">
 						{#each menuItems as item (item.href)}
-							<a href={resolve(item.href)} class="group flex flex-col items-center gap-1">
+							<a
+								href={resolve(item.href)}
+								class="group flex flex-col items-center gap-1"
+								onclick={(e) => {
+									if (item.href === '/room') {
+										e.preventDefault();
+										openRoomPopup();
+									}
+								}}
+							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									fill="none"
@@ -71,6 +107,41 @@
 								</span>
 							</a>
 						{/each}
+
+						{#if showRoomPopup}
+							<div
+								class="absolute left-0 top-full mt-2 w-72 rounded-lg border border-gray-200 bg-white p-4 shadow-lg"
+							>
+								<label class="block text-sm font-medium text-gray-700">
+									Nome della stanza
+								</label>
+								<input
+									type="text"
+									bind:value={roomName}
+									placeholder="es. riunione"
+									class="mt-1 w-full rounded-md"
+								/>
+								{#if roomPopupMessage}
+									<p class="mt-2 text-sm text-red-600">{roomPopupMessage}</p>
+								{/if}
+								<div class="mt-4 flex justify-end gap-2">
+									<button
+										type="button"
+										class="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-100"
+										onclick={closeRoomPopup}
+									>
+										Annulla
+									</button>
+									<button
+										type="button"
+										class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
+										onclick={submitRoomPopup}
+									>
+										Apri stanza
+									</button>
+								</div>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
