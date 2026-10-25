@@ -1,6 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { AccessToken } from 'livekit-server-sdk';
-import { LIVEKIT_API_KEY, LIVEKIT_API_SECRET } from '$env/static/private';
+import { LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL } from '$env/static/private';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals, url }) => {
@@ -24,5 +24,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		canSubscribe: true
 	});
 
-	return json({ token: await at.toJwt() });
+	return json({
+		token: await at.toJwt(),
+		livekitUrl: LIVEKIT_URL
+	});
 };

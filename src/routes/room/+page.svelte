@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { env } from '$env/dynamic/public';
 	import { Room, RoomEvent, Track, type Participant } from 'livekit-client';
 	import { onDestroy, onMount } from 'svelte';
 
@@ -231,7 +230,7 @@
 	}
 
 	async function handleDisconnect() {
-		await goto(resolve('/room/ended'));
+		await goto(resolve('/'));
 	}
 
 	onMount(async () => {
@@ -242,12 +241,15 @@
 				throw new Error(`Impossibile ottenere il token di accesso (errore ${res.status}).`);
 			}
 
-			const { token } = (await res.json()) as { token: string };
-			const serverUrl = env.PUBLIC_LIVEKIT_URL;
+			const { token, livekitUrl } = (await res.json()) as {
+				token: string;
+				livekitUrl: string;
+			};
+			const serverUrl = livekitUrl;
 
 			if (!serverUrl) {
 				throw new Error(
-					'PUBLIC_LIVEKIT_URL non configurata: crea il file webapp/.env partendo da .env.example.'
+					'LIVEKIT_URL non configurata: crea il file webapp/.env partendo da .env.example.'
 				);
 			}
 

@@ -1,26 +1,47 @@
-node_modules
+# temporary files
+*~
+*.swp
 
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Env
-.env
-.env.*
+# hidden stuff
+.*
+!.editorconfig
+!.gitignore
+!.yamllint
+!.env.reference
 !.env.example
-!.env.test
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-# Playwright
-test-results
+# python specific
+__pycache__/
+venv/
+
+# project related
+*.zip
+
+/log.txt
+
+.aws-sam
+node_modules
+**/node_modules
+
+tmp
+**/dist
+
+.aws
+data/
+
+*/local_file.json
+**/http-client.env.json
+
+**/*credential*.json
+**/token.json
+**/auth-token*
+porting-generali/
+
+/.vscode
+
 .aider*
+!.aider.conf.yml
+!.aider.model.settings.yml
+
+local-assets/
+ignore/
