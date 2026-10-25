@@ -120,7 +120,7 @@
 	}
 
 	async function handleDisconnect() {
-		await goto(resolve('/room/ended'));
+		await goto(resolve('/'));
 	}
 
 	onMount(async () => {
