@@ -30,6 +30,20 @@
 
 	let tiles = $state<Tile[]>([]);
 
+	interface ChatMessage {
+		from: string;
+		text: string;
+		mine: boolean;
+	}
+
+	let chatMessages = $state<ChatMessage[]>([]);
+	let chatInput = $state('');
+	let myName = $state('Tu');
+	let mentionTargets = $state<{ id: string; name: string }[]>([]);
+
+	const chatEncoder = new TextEncoder();
+	const chatDecoder = new TextDecoder();
+
 	function syncTiles() {
 		const all: Participant[] = [room.localParticipant, ...room.remoteParticipants.values()];
 		const next: Tile[] = [];
@@ -66,7 +80,103 @@
 			}
 		}
 
+		mentionTargets = all.map((p) => ({ id: p.identity, name: p.name || p.identity || 'Ospite' }));
 		tiles = next;
+	}
+
+	const MENTION_RE = /@(\S+)/g;
+
+	function parseMentions(text: string): { title: string; assignees: string[] | 'everyone' | null } {
+		const mentions = [...text.matchAll(MENTION_RE)].map((m) => m[1]);
+		const title = text
+			.replace(MENTION_RE, ' ')
+			.replace(/\s+/g, ' ')
+			.trim();
+
+		if (mentions.length === 0) {
+			return { title, assignees: null };
+		}
+
+		if (mentions.some((m) => m.toLowerCase() === 'everyone')) {
+			return { title, assignees: 'everyone' };
+		}
+
+		const ids = new Set<string>();
+		for (const m of mentions) {
+			const target = mentionTargets.find((t) => t.name.toLowerCase() === m.toLowerCase());
+			if (target) {
+				ids.add(target.id);
+			}
+		}
+
+		return { title, assignees: ids.size > 0 ? [...ids] : null };
+	}
+
+	const mentionSuggestions = $derived.by(() => {
+		const match = chatInput.match(/@(\S*)$/);
+		if (!match) return [];
+
+		const query = match[1].toLowerCase();
+		return ['everyone', ...mentionTargets.map((t) => t.name)]
+			.filter((n) => n.toLowerCase().startsWith(query) && n.toLowerCase() !== query)
+			.slice(0, 5);
+	});
+
+	function insertMention(name: string) {
+		chatInput = chatInput.replace(/@\S*$/, `@${name} `);
+	}
+
+	async function sendChatMessage() {
+		const text = chatInput.trim();
+		if (!text) return;
+		chatInput = '';
+
+		try {
+			await room.localParticipant.publishData(chatEncoder.encode(JSON.stringify({ text })), {
+				reliable: true,
+				topic: 'chat'
+			});
+		} catch (e) {
+			console.warn('Invio messaggio chat fallito:', e);
+		}
+		chatMessages = [...chatMessages, { from: myName, text, mine: true }];
+
+		const { title, assignees } = parseMentions(text);
+
+		if (!assignees || !title) {
+			if (text.includes('@')) {
+				chatMessages = [
+					...chatMessages,
+					{
+						from: 'Sistema',
+						text: '⚠️ Menzione non riconosciuta o testo mancante: la task non è stata creata.',
+						mine: true
+					}
+				];
+			}
+			return;
+		}
+
+		try {
+			const res = await fetch('/api/tasks', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ room: roomName, title, assignees })
+			});
+			if (!res.ok) {
+				throw new Error(await res.text());
+			}
+			chatMessages = [
+				...chatMessages,
+				{
+					from: 'Sistema',
+					text: `✅ Task «${title}» assegnata a ${assignees === 'everyone' ? 'tutto il gruppo' : 'ai partecipanti taggati'}.`,
+					mine: true
+				}
+			];
+		} catch (e) {
+			deviceWarning = `Impossibile salvare la task: ${describeDeviceError(e)}.`;
+		}
 	}
 
 	function attachTrack(node: HTMLMediaElement, track: Track | null) {
@@ -161,6 +271,24 @@
 					}
 					syncTiles();
 				})
+				.on(RoomEvent.DataReceived, (payload, participant, _kind, topic) => {
+					if (topic && topic !== 'chat') return;
+
+					try {
+						const msg = JSON.parse(chatDecoder.decode(payload)) as { text?: string };
+						if (typeof msg.text !== 'string') return;
+						chatMessages = [
+							...chatMessages,
+							{
+								from: participant?.name || participant?.identity || 'Ospite',
+								text: msg.text,
+								mine: false
+							}
+						];
+					} catch {
+						// ignora pacchetti dati che non sono messaggi chat
+					}
+				})
 				.on(RoomEvent.Disconnected, () => void handleDisconnect());
 
 			await room.connect(serverUrl, token);
@@ -202,6 +330,7 @@
 
 			micEnabled = room.localParticipant.isMicrophoneEnabled;
 			camEnabled = room.localParticipant.isCameraEnabled;
+			myName = room.localParticipant.name || room.localParticipant.identity || 'Tu';
 			connected = true;
 			syncTiles();
 		} catch (e) {
@@ -267,10 +396,11 @@
 			</p>
 		{/if}
 
-		<main
-			class="grid flex-1 gap-3 overflow-y-auto px-4 pb-2"
-			style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"
-		>
+		<div class="flex min-h-0 flex-1">
+			<main
+				class="grid flex-1 gap-3 overflow-y-auto px-4 pb-2"
+				style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));"
+			>
 			{#each tiles as tile (tile.key)}
 				<div
 					class="relative aspect-video self-center overflow-hidden rounded-lg bg-gray-900 {tile.isSpeaking
@@ -313,7 +443,66 @@
 					</div>
 				</div>
 			{/each}
-		</main>
+			</main>
+
+			<aside
+				class="hidden w-80 shrink-0 flex-col border-l border-gray-800 bg-gray-900 md:flex"
+			>
+				<p class="border-b border-gray-800 px-3 py-2 text-xs text-gray-400">
+					Chat · assegna una task con <code>@nome</code> o <code>@everyone</code>
+				</p>
+				<div class="flex-1 space-y-2 overflow-y-auto p-3 text-sm">
+					{#if chatMessages.length === 0}
+						<p class="text-xs text-gray-500">
+							Nessun messaggio. Scrivi ad esempio «@everyone Preparare la demo» per creare
+							una task di gruppo.
+						</p>
+					{/if}
+					{#each chatMessages as msg}
+						<div class={msg.mine ? 'text-right' : ''}>
+							<span class="text-xs text-gray-400">{msg.from}</span>
+							<p class="inline-block rounded-lg bg-gray-800 px-2 py-1">{msg.text}</p>
+						</div>
+					{/each}
+				</div>
+				<div class="relative border-t border-gray-800 p-2">
+					{#if mentionSuggestions.length > 0}
+						<div
+							class="absolute inset-x-2 bottom-full mb-1 overflow-hidden rounded-md border border-gray-700 bg-gray-800 text-sm"
+						>
+							{#each mentionSuggestions as suggestion}
+								<button
+									type="button"
+									class="block w-full px-2 py-1 text-left hover:bg-gray-700"
+									onclick={() => insertMention(suggestion)}
+								>
+									@{suggestion}
+								</button>
+							{/each}
+						</div>
+					{/if}
+					<form
+						class="flex gap-2"
+						onsubmit={(e) => {
+							e.preventDefault();
+							void sendChatMessage();
+						}}
+					>
+						<input
+							bind:value={chatInput}
+							placeholder="Messaggio o @task…"
+							class="min-w-0 flex-1 rounded-md bg-gray-800 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-blue-500"
+						/>
+						<button
+							type="submit"
+							class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium hover:bg-blue-500"
+						>
+							Invia
+						</button>
+					</form>
+				</div>
+			</aside>
+		</div>
 
 		<footer class="flex flex-wrap items-center justify-center gap-3 p-4">
 			<button

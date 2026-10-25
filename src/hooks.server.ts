@@ -37,7 +37,12 @@ const supabase: Handle = async ({ event, resolve }) => {
 	});
 };
 
-const publicPaths = ['/login', '/register'];
+// Rotte raggiungibili senza sessione
+const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+
+// Rotte per soli utenti NON autenticati: /reset-password è esclusa perché dopo
+// il clic sul link nell'email l'utente ha già una sessione di recupero attiva
+const anonymousOnlyPaths = ['/login', '/register', '/forgot-password'];
 
 function isPublic(pathname: string): boolean {
 	return publicPaths.includes(pathname) || pathname.startsWith('/demo');
@@ -53,8 +58,8 @@ const authGuard: Handle = async ({ event, resolve }) => {
 		redirect(303, '/login');
 	}
 
-	if (session && publicPaths.includes(event.url.pathname)) {
-		redirect(303, '/room');
+	if (session && anonymousOnlyPaths.includes(event.url.pathname)) {
+		redirect(303, '/');
 	}
 
 	return resolve(event);
