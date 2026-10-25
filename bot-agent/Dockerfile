@@ -122,6 +122,21 @@ RUN apt-get update \
 # This avoids expensive recursive chown and excludes build tools from the final image
 COPY --from=build --chown=appuser:appuser /app /app
 
+# Pre-create the model cache directory *with the right owner*. `HOME` is /app
+# (see adduser above), so Piper voices land in ~/.cache/piper-voices and the
+# faster-whisper weights in ~/.cache/huggingface.
+#
+# This directory has to exist in the image for `-v bot-agent-cache:/app/.cache`
+# to be usable: Docker seeds a *new* named volume with the contents and
+# ownership of the directory it is mounted on. If the path is missing, the
+# daemon creates the mount point itself as root, and the worker — running as
+# appuser — dies on the first job with:
+#   PermissionError: [Errno 13] Permission denied: '/app/.cache/piper-voices'
+#
+# This RUN must stay after the COPY above (so the build stage's /app does not
+# shadow it) and before USER appuser (chown needs root).
+RUN mkdir -p /app/.cache && chown appuser:appuser /app/.cache
+
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
 USER appuser
