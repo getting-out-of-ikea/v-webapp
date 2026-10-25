@@ -2,7 +2,6 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import { env } from '$env/dynamic/public';
 	import { Room, RoomEvent, Track, type Participant } from 'livekit-client';
 	import { onDestroy, onMount } from 'svelte';
 
@@ -132,8 +131,11 @@
 				throw new Error(`Impossibile ottenere il token di accesso (errore ${res.status}).`);
 			}
 
-			const { token } = (await res.json()) as { token: string };
-			const serverUrl = env.LIVEKIT_URL;
+			const { token, livekitUrl } = (await res.json()) as {
+				token: string;
+				livekitUrl: string;
+			};
+			const serverUrl = livekitUrl;
 
 			if (!serverUrl) {
 				throw new Error(
