@@ -1,4 +1,4 @@
-lk agent console --text src/bot_agent/agent.py
+lk agent console --text bot-agent/src/bot_agent/agent.py
 
 
 cd bot-agent/

@@ -133,11 +133,11 @@
 			}
 
 			const { token } = (await res.json()) as { token: string };
-			const serverUrl = env.PUBLIC_LIVEKIT_URL;
+			const serverUrl = env.LIVEKIT_URL;
 
 			if (!serverUrl) {
 				throw new Error(
-					'PUBLIC_LIVEKIT_URL non configurata: crea il file webapp/.env partendo da .env.example.'
+					'LIVEKIT_URL non configurata: crea il file webapp/.env partendo da .env.example.'
 				);
 			}
 

@@ -5,7 +5,7 @@
 # Use the official UV Python base image with Python 3.13 on Debian Bookworm
 # UV is a fast Python package manager that provides better performance than pip
 # We use the slim variant to keep the image size smaller while still having essential tools
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.12
 FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS base
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
@@ -50,8 +50,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy just the dependency files first, for more efficient layer caching
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock .python-version ./
 RUN mkdir -p src
+ENV UV_PYTHON_DOWNLOADS=never
 
 # Install Python dependencies using UV's lock file
 # --locked ensures we use exact versions from uv.lock for reproducible builds
@@ -68,7 +69,7 @@ RUN mkdir -p src
 #
 # This is also where uv installs its managed interpreter (into
 # UV_PYTHON_INSTALL_DIR, /opt/uv-python), which the final stage carries over.
-RUN uv sync --locked --no-install-project
+RUN uv sync --locked --no-install-project --no-dev
 
 # Pre-download any ML models or files the agent needs
 # This runs before COPY . . so the download layer is cached across code-only changes.
@@ -90,7 +91,7 @@ COPY . .
 # This registers the `bot-agent` console script declared in pyproject.toml
 # (`[project.scripts] bot-agent = "bot_agent:main"`), which is what the CMD
 # below invokes.
-RUN uv sync --locked
+RUN uv sync --locked --no-dev
 
 # --- Production stage ---
 # Build tools (gcc, g++, python3-dev) are not included in the final image
@@ -109,17 +110,17 @@ RUN adduser \
 
 WORKDIR /app
 
+# sounddevice (a transitive dep of livekit-agents) dlopens libportaudio.so.2.
+# The slim base has neither it nor a mic/speaker; we install only the shared
+# library so `bot-agent console` can even import, and keep --text so it never
+# opens a device.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libportaudio2 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Copy the application and virtual environment with correct ownership in a single layer
 # This avoids expensive recursive chown and excludes build tools from the final image
 COPY --from=build --chown=appuser:appuser /app /app
-
-# Copy uv's managed Python stack, generated in the build stage under
-# UV_PYTHON_INSTALL_DIR. It is kept out of /app and copied separately so its
-# ownership is explicit: the venv's `bin/python3` is a symlink chain that ends
-# here, and appuser must be able to traverse and execute it. Without this
-# (or with the default /root location) startup fails with
-# "Failed to canonicalize path `/app/.venv/bin/python3`: Permission denied".
-COPY --from=build --chown=appuser:appuser /opt/uv-python /opt/uv-python
 
 # Switch to the non-privileged user for all subsequent operations
 # This improves security by not running as root
@@ -137,4 +138,4 @@ USER appuser
 # "attempted relative import with no known parent package". The console
 # script goes through the `bot_agent` package, so the relative import
 # resolves correctly.
-CMD ["uv", "run", "bot-agent", "start"]
+CMD ["/app/.venv/bin/bot-agent", "start"]
