@@ -28,3 +28,5 @@ test-results
 # IDE
 .idea/
 *.iml
+
+ignore/

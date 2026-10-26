@@ -136,7 +136,7 @@ la sola normalizzazione testuale (minuscole, trim, rimozione della punteggiatura
    - `uv.lock` versionato nel repository, cosi le build sono riproducibili.
 2. Avvio in locale con `uv run uvicorn app.main:app --host 0.0.0.0 --port 8000`;
    negli script e nella CI usare sempre `uv run`, mai un virtualenv attivato a mano.
-3. Python 3.11 o superiore, fissato in pyproject.toml (requires-python) e in
+3. Python 3.12, fissato in pyproject.toml (requires-python) e in
    .python-version per uv.
 4. Modulo app/main.py con istanza FastAPI e middleware CORS limitato all'origine
    della UI.
