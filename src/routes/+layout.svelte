@@ -78,7 +78,10 @@
 	<header class="border-b border-gray-200 bg-white">
 		<nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
 			<div class="flex items-center gap-8">
-				<a href={resolve('/')} class="text-lg font-semibold">VideoApp</a>
+				<a href={resolve('/')} class="text-lg font-semibold">
+					Big App v. {__APP_VERSION__}
+					<span class="ml-1 text-xs font-normal text-gray-500">({__APP_BUILD__})</span>
+				</a>
 				{#if user}
 					<div class="relative flex items-center gap-6" aria-label="Menu principale">
 						{#each menuItems as item (item.href)}
