@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -69,3 +71,32 @@ async def test_probe_caches_the_result(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (await probe.status()).reachable is True
     assert (await probe.status()).reachable is True
     assert calls == 1
+
+
+async def test_probe_names_a_missing_key_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A path that points nowhere is reported as such, not as "no credentials"."""
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(tmp_path / "missing.json"))
+    probe = CredentialProbe(project_hint="demo-project")
+
+    status = await probe.status()
+
+    assert status.reachable is False
+    assert status.error == "credentials file not found"
+    assert status.project == "demo-project"
+
+
+async def test_probe_rejects_a_json_file_that_is_not_a_key(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An OAuth client secret is valid JSON but not a credential google-auth loads."""
+    secret = tmp_path / "client_secret.json"
+    secret.write_text('{"installed": {"client_id": "x"}}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(secret))
+    probe = CredentialProbe()
+
+    status = await probe.status()
+
+    assert status.reachable is False
+    assert status.error == "credentials file is not a Google key"
