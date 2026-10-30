@@ -163,6 +163,11 @@ async def tag(
 
     try:
         response = await vision_client.annotate(request)
+    except RuntimeError as exc:
+        # Raised by VisionClient when the underlying client cannot be created
+        # (e.g. missing Application Default Credentials).
+        logger.exception("Vision client unavailable")
+        raise HTTPException(status_code=503, detail="provider unavailable") from exc
     except gexc.ResourceExhausted as exc:
         raise HTTPException(status_code=429, detail="provider quota exhausted") from exc
     except (gexc.ServiceUnavailable, gexc.DeadlineExceeded) as exc:
