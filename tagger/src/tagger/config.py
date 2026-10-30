@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -47,5 +48,18 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Return a cached ``Settings`` instance."""
-    return Settings()
+    """Return a cached ``Settings`` instance.
+
+    Also propagates ``GOOGLE_APPLICATION_CREDENTIALS`` to ``os.environ`` so that
+    ``google.auth.default()`` (used by the Vision client) can find the service
+    account file even when it was only provided via ``.env``.
+    """
+    settings = Settings()
+    if settings.google_application_credentials:
+        os.environ.setdefault(
+            "GOOGLE_APPLICATION_CREDENTIALS",
+            settings.google_application_credentials,
+        )
+    if settings.google_cloud_project:
+        os.environ.setdefault("GOOGLE_CLOUD_PROJECT", settings.google_cloud_project)
+    return settings
