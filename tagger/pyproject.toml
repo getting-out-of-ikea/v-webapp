@@ -12,6 +12,7 @@ dependencies = [
     "google-cloud-vision>=3.16.0",
     "pillow>=12.3.0",
     "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.20",
     "uvicorn[standard]>=0.54.0",
 ]
 

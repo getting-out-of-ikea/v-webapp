@@ -1,3 +1,4 @@
+import pytest
 from google.cloud import vision
 
 from tagger.scoring import collect_tags, normalize_label, rank_tags
@@ -22,7 +23,7 @@ def test_collect_prefers_topicality_over_score() -> None:
     )
     tags = collect_tags(response)
     assert len(tags) == 1
-    assert tags[0].score == 0.9
+    assert tags[0].score == pytest.approx(0.9)
 
 
 def test_collect_dedupes_and_keeps_highest() -> None:
@@ -32,7 +33,7 @@ def test_collect_dedupes_and_keeps_highest() -> None:
     )
     tags = collect_tags(response)
     assert len(tags) == 1
-    assert tags[0].score == 0.8
+    assert tags[0].score == pytest.approx(0.8)
     assert tags[0].source == "object"
 
 
@@ -42,7 +43,7 @@ def test_collect_uses_aliases() -> None:
     )
     tags = collect_tags(response, aliases={"automobile": "auto"})
     assert len(tags) == 1
-    assert tags[0].score == 0.6
+    assert tags[0].score == pytest.approx(0.6)
 
 
 def test_rank_applies_threshold_and_top_k() -> None:

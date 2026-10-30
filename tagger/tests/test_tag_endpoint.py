@@ -1,3 +1,4 @@
+import importlib
 import io
 
 import pytest
@@ -5,7 +6,9 @@ from fastapi.testclient import TestClient
 from google.cloud import vision
 from PIL import Image
 
-from tagger import main as main_module
+# `tagger/__init__.py` defines a `main()` function, so `from tagger import main`
+# would import the function instead of the module. Import the module explicitly.
+main_module = importlib.import_module("tagger.main")
 
 
 def _png_bytes() -> bytes:
