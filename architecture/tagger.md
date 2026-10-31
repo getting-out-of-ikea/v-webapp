@@ -335,7 +335,7 @@ L'utente fotografa e riceve i tag.
 3. M3 - Feature aggiuntive: Object Localization, mode objects e auto, fusione e
    deduplica dei risultati, alias locali.
 4. M4 - UI minima: scatto da camera, upload e visualizzazione dei tag. Nessun
-   vocabolario lato client.
+   vocabolario lato client. utilizza il menu' tag nella home.
 5. M5 - Affidabilita: retry con backoff, mappatura degli errori del fornitore, quota
    e rate limiting, log strutturati con request id.
 6. M6 - Rifiniture: soglie, stati di errore, responsive, accessibilita, controllo
