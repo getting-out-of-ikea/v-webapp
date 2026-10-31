@@ -25,7 +25,6 @@ VISION_SCOPE = "https://www.googleapis.com/auth/cloud-vision"
 
 ENV_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS"
 
-
 @dataclass(frozen=True)
 class CredentialStatus:
     """Outcome of a credential check.
