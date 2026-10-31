@@ -8,10 +8,10 @@ POST http://localhost:8000/tag
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
-Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Disposition: form-data; name="image"; filename="gatto-vino.webp"
 Content-Type: image/jpeg
 
-< ./example.jpg
+< /home/alex/Downloads/gatto-vino.webp
 --WebAppBoundary--
 
 ### POST /tag – parametri espliciti, mode labels
@@ -19,10 +19,10 @@ POST http://localhost:8000/tag
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
-Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Disposition: form-data; name="image"; filename="gatto-vino.webp"
 Content-Type: image/jpeg
 
-< ./example.jpg
+< /home/alex/Downloads/gatto-vino.webp
 --WebAppBoundary
 Content-Disposition: form-data; name="mode"
 
@@ -47,10 +47,10 @@ POST http://localhost:8000/tag
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
-Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Disposition: form-data; name="image"; filename="gatto-vino.webp"
 Content-Type: image/jpeg
 
-< ./example.jpg
+< /home/alex/Downloads/gatto-vino.webp
 --WebAppBoundary
 Content-Disposition: form-data; name="mode"
 
