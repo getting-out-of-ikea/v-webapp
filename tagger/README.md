@@ -1,3 +1,7 @@
+# environment
+
+source .venv/bin/activate
+
 # tagger
 
 Servizio di tagging automatico delle immagini basato su Google Cloud Vision:

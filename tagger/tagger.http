@@ -1,2 +1,2 @@
 ###
-GET https://example.com/s.js
+GET http://localhost:8000/health
