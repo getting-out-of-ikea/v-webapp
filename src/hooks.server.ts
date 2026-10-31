@@ -37,7 +37,11 @@ const supabase: Handle = async ({ event, resolve }) => {
 	});
 };
 
-const publicPaths = ['/login', '/register'];
+// `/forgot-password` e `/reset-password` devono essere pubbliche: la seconda
+// riceve il ?code= dal link nell'email di Supabase e stabilisce la sessione
+// solo dentro il suo `load`. Se l'authGuard le bloccasse prima, l'utente
+// verrebbe rimandato a /login senza che il codice venga mai scambiato.
+const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 function isPublic(pathname: string): boolean {
 	return publicPaths.includes(pathname) || pathname.startsWith('/demo');
@@ -54,7 +58,7 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	}
 
 	if (session && publicPaths.includes(event.url.pathname)) {
-		redirect(303, '/room');
+		redirect(303, '/');
 	}
 
 	return resolve(event);

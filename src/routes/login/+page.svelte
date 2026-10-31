@@ -35,6 +35,11 @@
 				class="rounded-md"
 			/>
 		</label>
+		<div class="-mt-2 text-right">
+			<a href={resolve('/forgot-password')} class="text-sm text-gray-600 underline">
+				Password dimenticata?
+			</a>
+		</div>
 		<button type="submit" class="rounded-md bg-gray-900 px-4 py-2 text-white hover:bg-gray-700">
 			Accedi
 		</button>

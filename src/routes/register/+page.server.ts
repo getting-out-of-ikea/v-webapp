@@ -39,6 +39,6 @@ export const actions: Actions = {
 			};
 		}
 
-		redirect(303, '/room');
+		redirect(303, '/');
 	}
 };
