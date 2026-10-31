@@ -29,7 +29,6 @@
 		<nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
 			<a href={resolve('/')} class="text-lg font-semibold">VideoApp</a>
 			<div class="flex items-center gap-4 text-sm">
-				<a href={resolve('/tag')} class="hover:underline">Tag</a>
 				{#if user}
 					<span class="text-gray-600">{user.email}</span>
 					<form method="POST" action={resolve('/logout')}>

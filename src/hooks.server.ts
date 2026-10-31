@@ -40,11 +40,7 @@ const supabase: Handle = async ({ event, resolve }) => {
 const publicPaths = ['/login', '/register'];
 
 function isPublic(pathname: string): boolean {
-	return (
-		publicPaths.includes(pathname) ||
-		pathname.startsWith('/demo') ||
-		pathname.startsWith('/tag')
-	);
+	return publicPaths.includes(pathname) || pathname.startsWith('/demo');
 }
 
 const authGuard: Handle = async ({ event, resolve }) => {
