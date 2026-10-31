@@ -7,7 +7,11 @@ from dataclasses import dataclass
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+# MIME dichiarati dal client: solo un primo filtro, non una garanzia.
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
+
+# Formati realmente accettati, riconosciuti da Pillow sul contenuto del file.
+ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 
 class InvalidImageError(ValueError):
@@ -25,6 +29,7 @@ class PreparedImage:
 def prepare_image(raw: bytes, max_dimension: int) -> PreparedImage:
     """Normalise an uploaded image for the Vision API.
 
+    - Verifies the real format from the bytes, not from the client's headers.
     - Applies EXIF orientation so smartphone photos are not rotated.
     - Converts to RGB (Vision rejects some exotic modes).
     - Downscales the longest side to ``max_dimension``.
@@ -32,6 +37,12 @@ def prepare_image(raw: bytes, max_dimension: int) -> PreparedImage:
     """
     try:
         with Image.open(io.BytesIO(raw)) as img:
+            detected = (img.format or "").upper()
+            if detected not in ALLOWED_FORMATS:
+                raise InvalidImageError(
+                    f"unsupported image format: {detected or 'unknown'}"
+                )
+
             img = ImageOps.exif_transpose(img)
             if img.mode != "RGB":
                 img = img.convert("RGB")

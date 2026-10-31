@@ -1,12 +1,12 @@
 [project]
 name = "tagger"
 version = "0.1.0"
-description = "Add your description here"
+description = "Automatic image tagging service backed by Google Cloud Vision"
 readme = "README.md"
 authors = [
     { name = "Alessandro Santoemma", email = "alessandro.santoemma@gmail.com" }
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.0",
     "google-cloud-vision>=3.16.0",

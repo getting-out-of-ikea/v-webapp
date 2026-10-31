@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 import time
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
+from typing import Annotated, AsyncIterator
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from google.api_core import exceptions as gexc
 from google.cloud import vision
@@ -106,9 +106,9 @@ def _build_request(
 
 
 @app.get("/health", response_model=HealthResponse)
-async def health() -> HealthResponse:
-    settings: Settings = app.state.settings
-    vision_client: VisionClient = app.state.vision
+async def health(request: Request) -> HealthResponse:
+    settings: Settings = request.app.state.settings
+    vision_client: VisionClient = request.app.state.vision
     return HealthResponse(
         status="ok",
         credentials_ok=vision_client.credentials_ok(),
@@ -119,22 +119,25 @@ async def health() -> HealthResponse:
 
 @app.post("/tag", response_model=TagResponse)
 async def tag(
+    request: Request,
     image: UploadFile = File(...),
     mode: str = Form("auto"),
-    top_k: int = Form(10),
-    threshold: float = Form(0.0),
-    lang: str = Form("it"),
+    top_k: Annotated[int | None, Form(gt=0)] = None,
+    threshold: Annotated[float | None, Form(ge=0.0, le=1.0)] = None,
+    lang: str | None = Form(None),
 ) -> TagResponse:
-    settings: Settings = app.state.settings
-    vision_client: VisionClient = app.state.vision
-    aliases: dict[str, str] = app.state.aliases
+    settings: Settings = request.app.state.settings
+    vision_client: VisionClient = request.app.state.vision
+    aliases: dict[str, str] = request.app.state.aliases
 
+    # I default arrivano dalla configurazione: nessun valore cablato qui.
+    top_k = settings.default_top_k if top_k is None else top_k
+    threshold = settings.default_threshold if threshold is None else threshold
+    lang = (lang or settings.default_lang).strip().lower()
+
+    mode = mode.strip().lower()
     if mode not in ALLOWED_MODES:
         raise HTTPException(status_code=400, detail=f"unknown mode: {mode}")
-    if top_k <= 0:
-        raise HTTPException(status_code=400, detail="top_k must be positive")
-    if not 0.0 <= threshold <= 1.0:
-        raise HTTPException(status_code=400, detail="threshold must be in [0, 1]")
 
     if image.content_type and image.content_type not in ALLOWED_MIME:
         raise HTTPException(status_code=400, detail="unsupported image type")
@@ -154,7 +157,7 @@ async def tag(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     t1 = time.perf_counter()
 
-    request = _build_request(
+    request_payload = _build_request(
         prepared.data,
         features,
         lang,
@@ -162,7 +165,7 @@ async def tag(
     )
 
     try:
-        response = await vision_client.annotate(request)
+        response = await vision_client.annotate(request_payload)
     except RuntimeError as exc:
         # Raised by VisionClient when the underlying client cannot be created
         # (e.g. missing Application Default Credentials).

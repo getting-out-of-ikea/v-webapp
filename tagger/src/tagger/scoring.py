@@ -47,7 +47,12 @@ def load_aliases(path: Path) -> dict[str, str]:
 
 
 def _label_score(annotation: vision.EntityAnnotation) -> float | None:
-    """Prefer topicality (centrality) over score (confidence)."""
+    """Prefer topicality (centrality) over score (confidence).
+
+    The protobuf fields are proto3 scalars, so a value that was never set is
+    indistinguishable from ``0.0``. A zero score therefore means "absent" here:
+    it is dropped instead of being reported as a real, lowest-possible score.
+    """
     for attr in ("topicality", "score"):
         value = getattr(annotation, attr, None)
         if isinstance(value, (int, float)) and value > 0:
@@ -56,6 +61,7 @@ def _label_score(annotation: vision.EntityAnnotation) -> float | None:
 
 
 def _object_score(annotation: vision.LocalizedObjectAnnotation) -> float | None:
+    """Same proto3 caveat as ``_label_score``: a zero confidence is absence."""
     value = getattr(annotation, "score", None)
     if isinstance(value, (int, float)) and value > 0:
         return float(value)
