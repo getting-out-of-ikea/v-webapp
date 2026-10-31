@@ -1,2 +1,58 @@
 ###
 GET http://localhost:8000/health
+
+### POST /tag – solo immagine, tutti i default da configurazione
+# Usa DEFAULT_TOP_K, DEFAULT_THRESHOLD e DEFAULT_LANG del .env.
+# Il file ./example.jpg deve esistere accanto a questo .http.
+POST http://localhost:8000/tag
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Type: image/jpeg
+
+< ./example.jpg
+--WebAppBoundary--
+
+### POST /tag – parametri espliciti, mode labels
+POST http://localhost:8000/tag
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Type: image/jpeg
+
+< ./example.jpg
+--WebAppBoundary
+Content-Disposition: form-data; name="mode"
+
+labels
+--WebAppBoundary
+Content-Disposition: form-data; name="top_k"
+
+5
+--WebAppBoundary
+Content-Disposition: form-data; name="threshold"
+
+0.4
+--WebAppBoundary
+Content-Disposition: form-data; name="lang"
+
+it
+--WebAppBoundary--
+
+### POST /tag – mode objects
+# Richiede VISION_ENABLE_OBJECTS=true, altrimenti risponde 400.
+POST http://localhost:8000/tag
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="image"; filename="example.jpg"
+Content-Type: image/jpeg
+
+< ./example.jpg
+--WebAppBoundary
+Content-Disposition: form-data; name="mode"
+
+objects
+--WebAppBoundary--
